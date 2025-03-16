@@ -11,11 +11,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/anh_sang")
-public class DataController {
+public class LuxController {
     private final AdafruitService adafruitService;
 
     @Autowired
-    public DataController(AdafruitService adafruitService) {
+    public LuxController(AdafruitService adafruitService) {
         this.adafruitService = adafruitService;
     }
 
