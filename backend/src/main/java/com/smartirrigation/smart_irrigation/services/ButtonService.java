@@ -18,8 +18,8 @@ public class ButtonService {
     private static final String ROOT_URL = "https://io.adafruit.com/api/v2/giang88/feeds/";
     private static final Dotenv dotenv = Dotenv.configure().load();
 
-    public Map<String, Object> senDataButton1 (Object data){
-        String url = ROOT_URL + "/button1/data/batch";
+    public Map<String, Object> senDataButton1 (Object data, Object buttonName){
+        String url = ROOT_URL + buttonName.toString();
         RestTemplate restTemplate = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
@@ -36,4 +36,5 @@ public class ButtonService {
 
         return response.getBody();
     }
+
 }

@@ -19,6 +19,6 @@ public class ButtonController {
 
     @PostMapping("/button1")
     public Map<String, Object> sendDataButton1 (@RequestBody Map<String,  Object> data){
-        return buttonService.senDataButton1(data.get("value"));
+        return buttonService.senDataButton1(data.get("value"), data.get("buttonName"));
     }
 }
