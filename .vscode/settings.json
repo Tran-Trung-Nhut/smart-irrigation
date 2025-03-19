@@ -1,0 +1,7 @@
+{
+    "java.completion.importOrder": ["java", "javax", "org", "com"],
+    "java.completion.favoriteStaticMembers": [
+        "org.springframework.boot.SpringApplication.run",
+        "org.springframework.boot.test.context.SpringBootTest"
+    ]
+}
