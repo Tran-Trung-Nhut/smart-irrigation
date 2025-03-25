@@ -2,52 +2,62 @@ package com.smartirrigation.smart_irrigation.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
-import com.smartirrigation.smart_irrigation.models.Lux;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import com.smartirrigation.smart_irrigation.models.SensorData;
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 @Service
 public class AdafruitService {
     private static final String AIO_USERNAME = "giang88";
-    private static final String LUX = "anhsang";
-    private static final String ROOTURL =  "https://io.adafruit.com/api/v2/" + AIO_USERNAME + "/feeds/" + LUX;
+    private static final String ROOT_URL = "https://io.adafruit.com/api/v2/" + AIO_USERNAME + "/feeds/";
 
-    private static final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public static List<Lux> getLux(){
-        String luxUrl = ROOTURL + "/data";
-        ResponseEntity<Lux[]> response = restTemplate.getForEntity(luxUrl, Lux[].class);
+    /**
+     * Lấy danh sách dữ liệu từ cảm biến theo loại (degree, lux, ...)
+     */
+    public List<SensorData> getSensorData(String sensorType) {
+        String url = ROOT_URL + sensorType + "/data";
+        ResponseEntity<SensorData[]> response = restTemplate.getForEntity(url, SensorData[].class);
         return Arrays.asList(response.getBody());
     }
 
-    public static Double getLastLuxValue() {
-        ResponseEntity<String> response = restTemplate.getForEntity(ROOTURL, String.class);
+    /**
+     * Lấy giá trị mới nhất từ cảm biến
+     */
+    public Double getLastSensorValue(String sensorType) {
+        String url = ROOT_URL + sensorType;
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
             JsonNode rootNode = objectMapper.readTree(response.getBody());
-
             return rootNode.get("last_value").asDouble();
         } catch (Exception e) {
+            e.printStackTrace();
             return 0.0;
         }
     }
 
-    public static Map<String, Object> getChart(){
-        String luxUrl = ROOTURL + "/data/chart";
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.getForEntity(luxUrl, String.class);
+    /**
+     * Lấy dữ liệu biểu đồ từ cảm biến
+     */
+    public Map<String, Object> getChart(String sensorType) {
+        String url = ROOT_URL + sensorType + "/data/chart";
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.readValue(response.getBody(), Map.class);
+            return objectMapper.readValue(response.getBody(), new TypeReference<Map<String, Object>>() {});
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
+            return new HashMap<>();
         }
     }
 }
