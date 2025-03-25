@@ -6,6 +6,7 @@ import com.smartirrigation.smart_irrigation.services.ButtonService;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/button")
@@ -17,8 +18,18 @@ public class ButtonController {
         this.buttonService = buttonService;
     }
 
-    @PostMapping("/button1")
-    public Map<String, Object> sendDataButton1 (@RequestBody Map<String,  Object> data){
-        return buttonService.senDataButton1(data.get("value"), data.get("buttonName"));
+    @CrossOrigin(origins = "*")
+    @GetMapping("/{button}/last-value")
+    public Map<String, Integer> getLastValueButton (@PathVariable String button){
+        Integer lastValue = buttonService.getLastValueButton(button);
+        Map<String, Integer> response = new HashMap<>();
+        response.put("last_value", lastValue);
+        return response;
+    } 
+
+    @CrossOrigin(origins = "*")
+    @GetMapping("/{button}/{status}")
+    public Map<String, Object> sendDataButton1 (@PathVariable String button, @PathVariable String status){
+        return buttonService.senDataButton1(status, button);
     }
 }

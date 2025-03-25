@@ -12,14 +12,14 @@ export default function WelcomeScreen() {
       style={styles.container}
     >
       <View style={styles.overlay}>
-        <Text style={styles.title}>GreenGenie</Text>
-        <Text style={styles.subtitle}>Everything is easy with us</Text>
+         <Text style={styles.title}>Smirr</Text>
+        <Text style={styles.subtitle}>Nông trại ngay trong tay bạn</Text>
 
         <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: "/login" })}>
 
 
 
-          <Text style={styles.buttonText}>Get Started</Text>
+          <Text style={styles.buttonText}>Bắt đầu</Text>
         </TouchableOpacity>
 
       </View>

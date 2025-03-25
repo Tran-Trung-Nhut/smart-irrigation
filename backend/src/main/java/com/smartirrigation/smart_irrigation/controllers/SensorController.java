@@ -2,6 +2,7 @@ package com.smartirrigation.smart_irrigation.controllers;
 
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import com.smartirrigation.smart_irrigation.services.AdafruitService;
 import com.smartirrigation.smart_irrigation.models.SensorData;
 import java.util.List;
@@ -18,11 +19,13 @@ public class SensorController {
         this.adafruitService = adafruitService;
     }
 
+    @CrossOrigin(origins = "*")
     @GetMapping("/{type}/data")
     public List<SensorData> getSensorData(@PathVariable String type) {
         return adafruitService.getSensorData(type);
     }
 
+    @CrossOrigin(origins = "*")
     @GetMapping("/{type}/last-value")
     public Map<String, Double> getLastSensorValue(@PathVariable String type) {
         Double lastValue = adafruitService.getLastSensorValue(type);
@@ -31,6 +34,7 @@ public class SensorController {
         return response;
     }
 
+    @CrossOrigin(origins = "*")
     @GetMapping("/{type}/chart")
     public Map<String, Object> getChart(@PathVariable String type) {
         return adafruitService.getChart(type);

@@ -6,6 +6,9 @@ import org.springframework.http.*;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service; 
 import io.github.cdimascio.dotenv.Dotenv;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 
 
 import java.lang.reflect.ParameterizedType;
@@ -17,17 +20,34 @@ import java.util.Map;
 public class ButtonService {
     private static final String ROOT_URL = "https://io.adafruit.com/api/v2/giang88/feeds/";
     private static final Dotenv dotenv = Dotenv.configure().load();
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public Map<String, Object> senDataButton1 (Object data, Object buttonName){
-        String url = ROOT_URL + buttonName.toString();
-        RestTemplate restTemplate = new RestTemplate();
+
+
+    public Integer getLastValueButton(String button){
+        String url = ROOT_URL + button;
+
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+
+        try {
+            JsonNode rootNode = objectMapper.readTree(response.getBody());
+            return rootNode.get("last_value").asInt();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    public Map<String, Object> senDataButton1 (String status, String button){
+        String url = ROOT_URL + button + "/data";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-AIO-Key", dotenv.get("X_AIO_Key"));
 
         Map<String, Object> payload = new HashMap<>();
-        payload.put("value", data);
+        payload.put("value", status);
 
 
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);

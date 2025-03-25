@@ -21,18 +21,13 @@ public class AdafruitService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /**
-     * Lấy danh sách dữ liệu từ cảm biến theo loại (degree, lux, ...)
-     */
     public List<SensorData> getSensorData(String sensorType) {
         String url = ROOT_URL + sensorType + "/data";
         ResponseEntity<SensorData[]> response = restTemplate.getForEntity(url, SensorData[].class);
         return Arrays.asList(response.getBody());
     }
 
-    /**
-     * Lấy giá trị mới nhất từ cảm biến
-     */
+
     public Double getLastSensorValue(String sensorType) {
         String url = ROOT_URL + sensorType;
         ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
@@ -46,9 +41,6 @@ public class AdafruitService {
         }
     }
 
-    /**
-     * Lấy dữ liệu biểu đồ từ cảm biến
-     */
     public Map<String, Object> getChart(String sensorType) {
         String url = ROOT_URL + sensorType + "/data/chart";
         ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);

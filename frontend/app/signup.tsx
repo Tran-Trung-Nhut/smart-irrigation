@@ -7,15 +7,20 @@ import {
   TouchableOpacity,
   ImageBackground,
   Image,
+  Switch,
+  ScrollView,
 } from "react-native";
 import useCustomFonts from "../hooks/useFonts";
 import { useRouter } from "expo-router";
 import Icon from 'react-native-vector-icons/FontAwesome'; // import thư viện icon
 
-export default function LoginScreen() {
+export default function SignupScreen() {
   const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [fullname, setFullname] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isSecure, setIsSecure] = useState(true);
   const [isSecure1, setIsSecure1] = useState(true);
   const togglePasswordVisibility = () => {
@@ -24,27 +29,41 @@ export default function LoginScreen() {
   const toggleConfirmPasswordVisibility = () => {
     setIsSecure1(!isSecure1); // Chuyển đổi trạng thái ẩn/hiện mật khẩu
   };
-  const fontsLoaded = useCustomFonts();
-  if (!fontsLoaded) return null; // Chờ tải font trước khi render UI
+  const [isChecked, setIsChecked] = useState(false);
 
+  const fontsLoaded = useCustomFonts();
+if (!fontsLoaded) return null; // Chờ tải font trước khi render UI
+  
 
   return (
     <ImageBackground source={require("../assets/images/bg-signup.jpg")} style={styles.background}>
       <View style={styles.container}>
-        {/* Logo */}
+
+        {/* Title */}
         <Text style={styles.logoText}>
-          Sm<Text style={styles.logoTextBold}>irr</Text>
+            Sm<Text style={styles.logoTextBold}>irr</Text>
         </Text>
 
-
-        {/* Welcome Text */}
-        <Text style={styles.welcomeText}>Chào mừng trở lại</Text>
-        <Text style={styles.subtitle}>Đăng nhập với tài khoản của bạn</Text>
-
-        {/* Input Fields */}
         <TextInput
           style={styles.input}
           placeholder="Tên đăng nhập"
+          placeholderTextColor="#aaa"
+          value={username}
+          onChangeText={setUsername}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Họ và tên"
+          placeholderTextColor="#aaa"
+          value={fullname}
+          onChangeText={setFullname}
+        />
+        
+        {/* Input Fields */}
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
           placeholderTextColor="#aaa"
           value={email}
           onChangeText={setEmail}
@@ -64,24 +83,40 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Forgot Password */}
-        <TouchableOpacity>
-          <Text style={styles.forgotPassword}>Quên mật khẩu?</Text>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Xác nhận mật khẩu"
+            placeholderTextColor="#aaa"
+            secureTextEntry={isSecure1}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+          />
+          <TouchableOpacity style={styles.iconContainer} onPress={toggleConfirmPasswordVisibility}>
+            <Icon name={isSecure1 ? 'eye-slash' : 'eye'} size={20} color="#aaa" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Terms & Conditions */}
+        <View style={styles.checkboxContainer}>
+          <Switch value={isChecked} onValueChange={setIsChecked}/>
+          <Text style={styles.termsText}>
+            Nếu bạn đăng ký, bạn chấp nhận với{" "}
+            <Text style={styles.link}>Điều khoản dịch vụ</Text> và{" "}
+            <Text style={styles.link}>Chính sách quyền riêng tư</Text>.
+          </Text>
+        </View>
+
+        {/* Sign Up Button */}
+        <TouchableOpacity style={styles.signupButton}>
+          <Text style={styles.signupButtonText}>ĐĂNG KÝ</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.loginButton}
-          onPress={() => router.replace("/(tabs)/home")}
-        >
-          <Text style={styles.loginButtonText}>ĐĂNG NHẬP</Text>
-        </TouchableOpacity>
-
-
-        {/* Sign Up Navigation */}
-        <View style={styles.signUpContainer}>
-          <Text style={styles.signUpText}>Không có tài khoản?</Text>
-          <TouchableOpacity onPress={() => router.push("/signup")}>
-            <Text style={styles.signUpLink}> Đăng ký</Text>
+        {/* Login Link */}
+        <View style={styles.loginContainer}>
+          <Text style={styles.loginText}>Bạn đã có tài khoản?</Text>
+          <TouchableOpacity onPress={() => router.push("/login")}>
+            <Text style={styles.loginLink}> Đăng nhập</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -117,16 +152,6 @@ const styles = StyleSheet.create({
   logoTextBold: {
     color: "#159148",
   },  
-  welcomeText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#222",
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 20,
-  },
   input: {
     width: "100%",
     height: 50,
@@ -135,11 +160,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     marginBottom: 15,
     fontSize: 16,
-  },
-  forgotPassword: {
-    color: "#007BFF",
-    alignSelf: "flex-end",
-    marginBottom: 15,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -155,27 +175,63 @@ const styles = StyleSheet.create({
     justifyContent: 'center', // Căn giữa icon dọc
     bottom: 8,
   },
-  loginButton: {
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  termsText: {
+    fontSize: 12,
+    color: "#666",
+    marginLeft: 10,
+    flex: 1,
+  },
+  link: {
+    color: "#007BFF",
+    fontWeight: "bold",
+  },
+  signupButton: {
     width: "100%",
     height: 50,
     backgroundColor: "#1E8449",
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 10,
-    marginBottom: 20,
+    marginBottom: 15,
   },
-  loginButtonText: {
+  signupButtonText: {
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
   },
-  signUpContainer: {
+  googleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    height: 50,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    justifyContent: "center",
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  googleIcon: {
+    width: 20,
+    height: 20,
+    resizeMode: "contain",
+    marginRight: 10,
+  },
+  googleText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  loginContainer: {
     flexDirection: "row",
   },
-  signUpText: {
+  loginText: {
     color: "#666",
   },
-  signUpLink: {
+  loginLink: {
     color: "#007BFF",
     fontWeight: "bold",
   },
