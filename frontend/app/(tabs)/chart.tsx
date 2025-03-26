@@ -1,53 +1,31 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Dimensions } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 import { Picker } from "@react-native-picker/picker";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
-// Dummy data cho biểu đồ
-const dummyData = {
-  humidity: [55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 95, 90, 88, 87, 85, 80, 78, 75, 72, 70, 68, 65, 63, 60],
-  soilMoisture: [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 88, 89, 86, 82, 78, 75, 70, 66, 64, 62, 60, 58],
-  temperature: [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 34, 33, 32, 30, 29, 28, 27, 26, 25, 24, 23],
-  light: [200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 770, 790, 800, 820, 840, 860, 880, 900, 920, 940, 960, 980],
-};
-
-type DataKey = "humidity" | "soilMoisture" | "temperature" | "light";
+type dataSensor = {
+  id: string;
+  value: string
+  feed_id: number;
+  feed_key: string;
+  created_at: Date;
+  created_epoch: number;
+  expiration: Date;
+}
 
 const ChartScreen = () => {
-  const pickerStyle = (lineColor: string) => ({
-    height: 50,
-    width: Dimensions.get("window").width - 40,
-    marginBottom: 10,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    borderWidth: 2,
-    borderColor: lineColor,
-    elevation: 2,
-    marginTop: 10,
-    justifyContent: "center",
-  });
-
-  const [selectedData, setSelectedData] = useState<DataKey>("humidity");
-  const [timeFrame, setTimeFrame] = useState("day");
-
-  const rawData = dummyData[selectedData];
-
-  // Tạo nhãn cho 24 giờ
-  const allHourLabels = Array.from({ length: 24 }, (_, i) => `${i + 1}h`);
-
-  const filteredLabels = allHourLabels.filter((_, index) => index % 2 === 0);
-  const filteredData = rawData.filter((_, index) => index % 2 === 0);
-
-  const dataLabels = timeFrame === "day" ? filteredLabels : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const dataToShow = timeFrame === "day" ? filteredData : rawData.slice(0, 7);
+  const [dataLight, setDataLight] = useState<dataSensor[]>([])
+  const [dataTemperature, setDataTemperature] = useState<dataSensor[]>([])
+  const [dataMoisture, setDataMoisture] = useState<dataSensor[]>([])
+  const [dataHumidity, setDataHumidity] = useState<dataSensor[]>([])
+  const [selectedTime, setSeletecTime] = useState<string>("day")
 
   const chartColors = {
-    humidity: "rgba(0, 123, 255, 0.5)",
-    soilMoisture: "rgba(255, 99, 132, 0.5)",
-    temperature: "rgba(255, 159, 64, 0.5)",
-    light: "rgba(75, 192, 192, 0.5)",
+    hour: "rgba(0, 123, 255, 0.5)",
+    day: "rgba(255, 99, 132, 0.5)",
+    week: "rgba(255, 159, 64, 0.5)",
+    month: "rgba(75, 192, 192, 0.5)",
   };
 
   const chartConfig = {
@@ -72,6 +50,57 @@ const ChartScreen = () => {
     },
   };
 
+  const fetchData = async (time: string) => {
+    try {
+      // const lightResponse = await fetch(`http://localhost:8080/sensor/anhsang/chart/${time}`)
+      const lightResponse = await fetch(`http://192.168.1.32:8080/sensor/anhsang/chart/${time}`)
+      const lightData = await lightResponse.json()
+      setDataLight(lightData.data);
+      
+      // const temperatureResponse = await fetch(`http://localhost:8080/sensor/nhietdo/chart/${time}`)
+      const temperatureResponse = await fetch(`http://192.168.1.32:8080/sensor/nhietdo/chart/${time}`)
+      const temperatureData = await temperatureResponse.json()
+      setDataTemperature(temperatureData.data);
+      
+      // const humidityResponse = await fetch(`http://localhost:8080/sensor/doam/chart/${time}`)
+      const humidityResponse = await fetch(`http://192.168.1.32:8080/sensor/doam/chart/${time}`)
+      const humidityData = await humidityResponse.json()
+      setDataHumidity(humidityData.data);
+      
+      // const moistureResponse = await fetch(`http://localhost:8080/sensor/do-am-dat/chart/${time}`)
+      const moistureResponse = await fetch(`http://192.168.1.32:8080/sensor/do-am-dat/chart/${time}`)
+      const moistrureData = await moistureResponse.json()
+      setDataMoisture(moistrureData.data);
+      
+    } catch (error) {
+      
+    }
+  }
+
+  const handleDataShow = (sensor: string): number[] => {
+    let values;
+    if (sensor === "light") values = dataLight.map(item => parseFloat(item.value));
+    else if (sensor === "temperature") values = dataTemperature.map(item => parseFloat(item.value));
+    else if (sensor === "moisture") values = dataMoisture.map(item => parseFloat(item.value));
+    else values = dataHumidity.map(item => parseFloat(item.value));
+  
+    return values.filter(value => !isNaN(value) && value !== null && value !== undefined);
+  };
+
+  const handleDateShow = (sensor: string): string[] => {
+    let dates;
+    if (sensor === "light") dates = dataLight.map(item => new Date(item.created_at).toLocaleTimeString());
+    else if (sensor === "temperature") dates = dataTemperature.map(item => new Date(item.created_at).toLocaleTimeString());
+    else if (sensor === "moisture") dates = dataMoisture.map(item => new Date(item.created_at).toLocaleTimeString());
+    else dates = dataHumidity.map(item => new Date(item.created_at).toLocaleTimeString());
+    return dates.filter(date => date && date !== "Invalid Date");
+  };
+  
+
+  useEffect(() => {
+    fetchData("day");
+  }, [])
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -81,61 +110,113 @@ const ChartScreen = () => {
         <Ionicons name="notifications-outline" size={24} color="black" />
       </View>
 
-      {/* Dropdown chọn loại dữ liệu */}
-      <View style={pickerStyle(chartColors[selectedData])}>
-        <Picker selectedValue={selectedData} onValueChange={(itemValue) => setSelectedData(itemValue)} style={styles.picker}>
-          <Picker.Item label="Độ ẩm" value="humidity" />
-          <Picker.Item label="Độ ẩm đất" value="soilMoisture" />
-          <Picker.Item label="Nhiệt độ" value="temperature" />
-          <Picker.Item label="Ánh sáng" value="light" />
+      <View style={styles.pickerTime}>
+        <Picker selectedValue={selectedTime} onValueChange={(itemValue) => {
+          fetchData(itemValue)
+        }} style={styles.picker}>
+          <Picker.Item label="Theo giờ" value="hour" />
+          <Picker.Item label="Theo ngày" value="day" />
+          <Picker.Item label="Theo tuần" value="week" />
+          <Picker.Item label="Theo tháng" value="month" />
         </Picker>
       </View>
-
       
 
       {/* Biểu đồ theo ngày */}
-      <Text style={styles.title}>Biểu đồ theo ngày</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <LineChart
           data={{
-            labels: dataLabels,
+            labels: handleDateShow("temperature"),
             datasets: [
               {
-                data: dataToShow,
-                color: () => chartColors[selectedData],
+                data: handleDataShow("temperature").length > 0
+                  ? handleDataShow("temperature")
+                  : [0], 
+                color: () => chartColors["hour"],
               },
             ],
           }}
-          width={Math.max(Dimensions.get("window").width - 40, dataLabels.length * 50)}
-          height={220}
+          width={Math.max(Dimensions.get("window").width - 40, dataTemperature.length * 50)}
+          height={1000}
           chartConfig={chartConfig}
           bezier
           style={styles.chart}
           fromZero
         />
       </ScrollView>
+      <Text style={styles.title}>Biểu đồ nhiệt độ</Text>
 
-      {/* Biểu đồ theo tuần */}
-      <Text style={styles.title}>Biểu đồ theo tuần</Text>
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <LineChart
           data={{
-            labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+            labels: handleDateShow("light"),
             datasets: [
               {
-                data: rawData.slice(0, 7),
-                color: () => chartColors[selectedData],
+                data: handleDataShow("light").length > 0
+                  ? handleDataShow("light")
+                  : [0], 
+                color: () => chartColors["hour"],
               },
             ],
           }}
-          width={Math.max(Dimensions.get("window").width - 40, 7 * 50)} 
-          height={220}
+          width={Math.max(Dimensions.get("window").width - 40, dataLight.length * 50)}
+          height={1000}
           chartConfig={chartConfig}
           bezier
           style={styles.chart}
           fromZero
         />
       </ScrollView>
+      <Text style={styles.title}>Biểu đồ ánh sáng</Text>
+
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <LineChart
+          data={{
+            labels: handleDateShow("humidity"),
+            datasets: [
+              {
+                data: handleDataShow("humidity").length > 0
+                  ? handleDataShow("humidity")
+                  : [0], 
+                color: () => chartColors["hour"],
+              },
+            ],
+          }}
+          width={Math.max(Dimensions.get("window").width - 40, dataHumidity.length * 50)}
+          height={1000}
+          chartConfig={chartConfig}
+          bezier
+          style={styles.chart}
+          fromZero
+        />
+      </ScrollView>
+      <Text style={styles.title}>Biểu đồ độ ẩm</Text>
+
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <LineChart
+          data={{
+            labels: handleDateShow("moisture"),
+            datasets: [
+              {
+                data: handleDataShow("moisture").length > 0
+                  ? handleDataShow("moisture")
+                  : [0], 
+                color: () => chartColors["hour"],
+              },
+            ],
+          }}
+          width={Math.max(Dimensions.get("window").width - 40, dataMoisture.length * 50)}
+          height={1000}
+          chartConfig={chartConfig}
+          bezier
+          style={styles.chart}
+          fromZero
+        />
+      </ScrollView>
+      <Text style={styles.title}>Biểu đồ độ ẩm đất</Text>
     </View>
   );
 };
@@ -152,12 +233,29 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   chart: {
-    borderRadius: 16,
-    marginVertical: 20,
+    borderWidth: 2, 
+    borderColor: "#4CAF50", 
+    borderRadius: 10,
+    marginVertical: 10, 
+    padding: 10, 
   },
   picker: {
     width: "100%",
     alignItems: "center"
+  },
+
+  pickerTime : {
+    height: 50,
+    width: Dimensions.get("window").width - 40,
+    marginBottom: 10,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    borderWidth: 2,
+    borderColor: "#4CAF50",
+    elevation: 2,
+    marginTop: 10,
+    justifyContent: "center",
   },
 });
 

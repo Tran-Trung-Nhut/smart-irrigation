@@ -35,8 +35,8 @@ public class SensorController {
     }
 
     @CrossOrigin(origins = "*")
-    @GetMapping("/{type}/chart")
-    public Map<String, Object> getChart(@PathVariable String type) {
-        return adafruitService.getChart(type);
+    @GetMapping("/{type}/chart/{time}")
+    public Map<String, Object> getChart(@PathVariable String type, @PathVariable String time) {
+        return adafruitService.getChart(type, time);
     }
 }

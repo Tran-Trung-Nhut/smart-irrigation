@@ -8,10 +8,17 @@ import org.springframework.web.client.RestTemplate;
 import com.smartirrigation.smart_irrigation.models.SensorData;
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class AdafruitService {
@@ -20,6 +27,16 @@ public class AdafruitService {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private List<Map<String, Object>> filterDataByTimeRange(List<Map<String, Object>> dataList, Instant start, Instant end) {
+        return dataList.stream()
+                .filter(data -> {
+                    String createdAt = (String) data.get("created_at");
+                    Instant dataInstant = Instant.parse(createdAt);
+                    return dataInstant.isAfter(start) && dataInstant.isBefore(end);
+                })
+                .collect(Collectors.toList());
+    }
 
     public List<SensorData> getSensorData(String sensorType) {
         String url = ROOT_URL + sensorType + "/data";
@@ -41,15 +58,42 @@ public class AdafruitService {
         }
     }
 
-    public Map<String, Object> getChart(String sensorType) {
-        String url = ROOT_URL + sensorType + "/data/chart";
+    public Map<String, Object> getChart(String sensorType, String time) {
+        String url = ROOT_URL + sensorType + "/data";
         ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
-
+    
         try {
-            return objectMapper.readValue(response.getBody(), new TypeReference<Map<String, Object>>() {});
+            Instant now = Instant.now(); 
+            List<Map<String, Object>> dataList = objectMapper.readValue(response.getBody(), new TypeReference<List<Map<String, Object>>>() {});
+            List<Map<String, Object>> filteredList;
+    
+            switch (time) {
+                case "day":
+                    Instant oneDayAgo = now.minusSeconds(24 * 60 * 60);
+                    filteredList = filterDataByTimeRange(dataList, oneDayAgo, now);
+                    break;
+                case "hour":
+                    Instant oneHourAgo = now.minusSeconds(60 * 60);
+                    filteredList = filterDataByTimeRange(dataList, oneHourAgo, now);
+                    break;
+                case "week":
+                    Instant oneWeekAgo = now.minusSeconds(7 * 24 * 60 * 60);
+                    filteredList = filterDataByTimeRange(dataList, oneWeekAgo, now);
+                    break;
+                default: 
+                    Instant oneMonthAgo = now.minusSeconds(30 * 24 * 60 * 60);
+                    filteredList = filterDataByTimeRange(dataList, oneMonthAgo, now);
+                    break;
+            }
+    
+            Map<String, Object> result = new HashMap<>();
+            result.put("data", filteredList);
+            return result;
+    
         } catch (Exception e) {
             e.printStackTrace();
             return new HashMap<>();
         }
     }
+    
 }
