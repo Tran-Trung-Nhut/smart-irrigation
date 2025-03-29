@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Modal, TouchableOpacity } from 'react-native';
-import { TextInput, Button, Text, List, Card, PaperProvider, Divider, Chip } from 'react-native-paper';
+import { TextInput, Button, Text, List, Card, PaperProvider, Divider, Chip, Menu } from 'react-native-paper';
 import { DatePickerInput } from 'react-native-paper-dates';
 import { en, registerTranslation } from 'react-native-paper-dates';
 registerTranslation('en', en);
@@ -126,7 +126,6 @@ const TimePicker = ({ value, onChange, label }) => {
 // TimePicker Styles
 const timePickerStyles = StyleSheet.create({
   input: {
-    // backgroundColor: 'white',
     color: 'black',
     borderRadius: 10,
   },
@@ -200,16 +199,49 @@ const timePickerStyles = StyleSheet.create({
 type Schedule = {
     startTime: Date;
     startDate: Date;
-    endDate: Date;
-    frequency: number;
+    device: string;
     duration: number;
+};
+
+// Device Dropdown Component
+const DeviceDropdown = ({ value, onChange }) => {
+  const [visible, setVisible] = useState(false);
+  const devices = ['Thiết bị 1', 'Thiết bị 2', 'Thiết bị 3'];
+
+  return (
+    <Menu
+      visible={visible}
+      onDismiss={() => setVisible(false)}
+      anchor={
+        <TouchableOpacity onPress={() => setVisible(true)}>
+          <TextInput
+            label="Thiết bị"
+            value={value}
+            editable={false}
+            style={styles.textInput}
+            right={<TextInput.Icon icon="menu-down" />}
+          />
+        </TouchableOpacity>
+      }
+    >
+      {devices.map((device) => (
+        <Menu.Item
+          key={device}
+          onPress={() => {
+            onChange(device);
+            setVisible(false);
+          }}
+          title={device}
+        />
+      ))}
+    </Menu>
+  );
 };
 
 function WateringSchedule() {
     const [startDate, setStartDate] = useState(new Date());
     const [startTime, setStartTime] = useState(new Date());
-    const [endDate, setEndDate] = useState(new Date());
-    const [frequency, setFrequency] = useState(1);
+    const [device, setDevice] = useState('Thiết bị 1');
     const [duration, setDuration] = useState(30);
     const [schedules, setSchedules] = useState<Schedule[]>([]);
     const [selectedDates, setSelectedDates] = useState<Date[]>([]);
@@ -224,62 +256,20 @@ function WateringSchedule() {
           0, 0
       );
   
-      // Now compare the complete datetime objects
-      if (!completeStartDateTime || !endDate || completeStartDateTime >= endDate) {
-          alert('Vui lòng nhập lại (Ngày kết thúc phải sau Ngày bắt đầu).');
-          return;
-      }
       if (duration <= 0) {
         alert('Vui lòng nhập thời lượng tưới hợp lệ.');
         return;
-      }
-      if (frequency === null || isNaN(frequency) || frequency <= 0) {
-          alert('Vui lòng nhập lại (Tần suất không được bằng 0).');
-          return;
       }
       
       // Store complete datetime objects in the schedule
       const newSchedule: Schedule = { 
           startTime: completeStartDateTime, 
           startDate,
-          endDate,
-          duration: Number(duration),
-          frequency 
+          device,
+          duration: Number(duration)
       };
       
       setSchedules([...schedules, newSchedule]);
-    };
-
-    const computeDates = ({ startTime, endDate, frequency }: Schedule) => {
-        const dates: Date[] = [];
-        let current = new Date(startTime);
-        
-        // Get just the date part of endDate
-        const endDateOnly = new Date(endDate);
-        endDateOnly.setHours(0, 0, 0, 0);
-        
-        // Add one day to include the end date fully
-        endDateOnly.setDate(endDateOnly.getDate() + 1);
-        
-        while (current < endDateOnly) {
-            dates.push(new Date(current));
-            current.setDate(current.getDate() + frequency);
-        }
-        return dates;
-    };
-
-    const formatDateTime = (date: Date) => {
-      const day = date.getDate().toString().padStart(2, '0');
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const year = date.getFullYear();
-      const hours = date.getHours().toString().padStart(2, '0');
-      const minutes = date.getMinutes().toString().padStart(2, '0');
-      return `${day}/${month}/${year} ${hours}:${minutes}`;
-    };
-  
-    const handleSelectSchedule = (schedule: Schedule) => {
-        const dates = computeDates(schedule);
-        setSelectedDates(dates);
     };
 
     const formatDate = (date: Date) => {
@@ -291,16 +281,18 @@ function WateringSchedule() {
 
     const formatWateringTime = (startTime, duration) => {
       const endTime = new Date(startTime);
-      endTime.setMinutes(endTime.getMinutes() + duration);
+      
+      endTime.setSeconds(endTime.getSeconds() + duration);
       
       const formatTime = (date) => {
-        const hours = date.getHours().toString().padStart(2, '0');
-        const minutes = date.getMinutes().toString().padStart(2, '0');
-        return `${hours}:${minutes}`;
+          const hours = date.getHours().toString().padStart(2, '0');
+          const minutes = date.getMinutes().toString().padStart(2, '0');
+          const seconds = date.getSeconds().toString().padStart(2, '0');
+          return `${hours}:${minutes}:${seconds}`;
       };
       
       return `${formatTime(startTime)} - ${formatTime(endTime)}`;
-    };
+  };
 
     return (
         <PaperProvider>
@@ -312,9 +304,9 @@ function WateringSchedule() {
                     </Text>
                     <Ionicons name="notifications-outline" size={24} color="black" />
                 </View>
-                <Text variant="headlineMedium" style={styles.title}>Watering Schedule</Text>
+                <Text variant="headlineMedium" style={styles.title}>LÊN LỊCH TƯỚI</Text>
 
-                {/* Start Date and Time - Modified column ratio */}
+                {/* Start Date and Time */}
                 <View style={styles.inputContainer}>
                     {/* Start Date - Now 2/3 width */}
                     <View style={styles.dateInputLeft}>
@@ -344,22 +336,19 @@ function WateringSchedule() {
                     </View>
                 </View>
 
-                {/* End Date and Duration */}
+                {/* Device and Duration */}
                 <View style={styles.inputContainer}>
-                    {/* End Date - Now 2/3 width */}
+                    {/* Device - Now 2/3 width */}
                     <View style={styles.dateInputLeft}>
-                        <DatePickerInput
-                            label="Ngày kết thúc"
-                            value={endDate}
-                            onChange={(d) => setEndDate(d || new Date())}
-                            locale="vn"
-                            style={styles.datePicker}
+                        <DeviceDropdown 
+                            value={device}
+                            onChange={setDevice}
                         />
                     </View>
                     {/* Duration - Now 1/3 width */}
                     <View style={styles.dateInputRight}>
-                    <TextInput
-                            label="Tưới trong (phút)" 
+                        <TextInput
+                            label="Tưới trong (giây)" 
                             value={duration.toString()}
                             onChangeText={(text) => {
                                 // If user deletes all input, set to empty string
@@ -379,25 +368,6 @@ function WateringSchedule() {
                     </View>
                 </View>
 
-                <TextInput
-                    label="Tuần suất (ngày)"
-                    value={frequency.toString()}
-                    onChangeText={(text) => {
-                        // If user deletes all input, set to 0
-                        if (text === '') {
-                            setFrequency(0);
-                        } else {
-                            // Update frequency if it's a valid number
-                            const newFrequency = parseInt(text, 10);
-                            if (!isNaN(newFrequency)) {
-                                setFrequency(newFrequency);
-                            }
-                        }
-                    }}
-                    keyboardType="number-pad"
-                    style={[styles.frequencyInput, { color: 'black' }]}
-                />
-
                 <Button mode="contained" onPress={handleAddSchedule} style={styles.addButton}>
                     Thêm lịch
                 </Button>
@@ -406,45 +376,29 @@ function WateringSchedule() {
 
                 <Text variant="titleLarge" style={styles.sectionTitle}>Danh sách lịch tưới</Text>
                 {schedules.length > 0 ? (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scheduleList}>
-        {schedules.map((schedule, index) => (
-            <Card 
-                key={index} 
-                style={styles.scheduleCard}
-                onPress={() => handleSelectSchedule(schedule)}
-            >
-                <Card.Content>
-                    <Text style={styles.scheduleCardTitle}>Lịch tưới #{index + 1}</Text>
-                    <Text style={styles.scheduleCardDetail}>
-                        Thời gian tưới: {formatWateringTime(schedule.startTime, schedule.duration)}
-                    </Text>
-                    <Text style={styles.scheduleCardDetail}>
-                        Thời gian: {formatDate(schedule.startDate)} - {formatDate(schedule.endDate)}
-                    </Text>
-                    <Text style={styles.scheduleCardDetail}>
-                        Tần suất: Cách {schedule.frequency} ngày
-                    </Text>
-                </Card.Content>
-            </Card>
-        ))}
-    </ScrollView>
-) : (
-    <Text style={styles.noSchedulesText}>No schedules saved yet.</Text>
-)}
-
-                <Divider style={styles.divider} />
-
-                {selectedDates.length > 0 && (
-                    <View>
-                        <Text variant="titleLarge" style={styles.sectionTitle}>Ngày tưới:</Text>
-                        <View style={styles.wateringDatesContainer}>
-                            {selectedDates.map((date, index) => (
-                                <Text key={index} style={styles.wateringDate}>
-                                    {formatDateTime(date)}
-                                </Text>
-                            ))}
-                        </View>
-                    </View>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scheduleList}>
+                        {schedules.map((schedule, index) => (
+                            <Card 
+                                key={index} 
+                                style={styles.scheduleCard}
+                            >
+                                <Card.Content>
+                                    <Text style={styles.scheduleCardTitle}>Lịch tưới #{index + 1}</Text>
+                                    <Text style={styles.scheduleCardDetail}>
+                                        Thời gian tưới: {formatWateringTime(schedule.startTime, schedule.duration)}
+                                    </Text>
+                                    <Text style={styles.scheduleCardDetail}>
+                                        Ngày: {formatDate(schedule.startDate)}
+                                    </Text>
+                                    <Text style={styles.scheduleCardDetail}>
+                                        Thiết bị: {schedule.device}
+                                    </Text>
+                                </Card.Content>
+                            </Card>
+                        ))}
+                    </ScrollView>
+                ) : (
+                    <Text style={styles.noSchedulesText}>No schedules saved yet.</Text>
                 )}
             </ScrollView>
         </PaperProvider>
@@ -459,9 +413,10 @@ const styles = StyleSheet.create({
     logo: { fontSize: 30, fontWeight: "bold", color: "#98C13F"},
     logoBold: { color: "#159148", fontWeight: "bold" },
     title: {
-        marginBottom: 15,
+        margin: 15,
         textAlign: 'center',
         color: "FFFFFF",
+        fontWeight: "bold",
     },
     inputContainer: {
         flexDirection: 'row',
@@ -484,13 +439,7 @@ const styles = StyleSheet.create({
         marginRight: 8,
         color: "black"
     },
-    frequencyInput: {
-        marginBottom: 10,
-        backgroundColor: "white",
-        color: "black"
-    },
     textInput: {
-        // backgroundColor: "white",
         color: "black",
         borderRadius: 10,
     },
@@ -533,23 +482,21 @@ const styles = StyleSheet.create({
         color: 'gray',
     },
     scheduleCard: {
-      // width: 260,
       marginRight: 12,
       marginBottom: 8,
       elevation: 2,
-       backgroundColor: 'white'
-  },
-  scheduleCardTitle: {
+      backgroundColor: 'white'
+    },
+    scheduleCardTitle: {
       fontWeight: 'bold',
       marginBottom: 5,
       color: '#159148',
-  },
-  scheduleCardDetail: {
+    },
+    scheduleCardDetail: {
       fontSize: 14,
       marginBottom: 3,
       color: 'black',
-     
-  },
+    },
 });
 
 export default WateringSchedule;
