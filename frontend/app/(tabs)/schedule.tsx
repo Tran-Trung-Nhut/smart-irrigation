@@ -1,23 +1,27 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, Modal, TouchableOpacity } from 'react-native';
-import { TextInput, Button, Text, List, Card, PaperProvider, Divider, Chip, Menu } from 'react-native-paper';
+import { TextInput, Button, Text, List, Card, PaperProvider, Divider, Menu } from 'react-native-paper';
 import { DatePickerInput } from 'react-native-paper-dates';
 import { en, registerTranslation } from 'react-native-paper-dates';
 registerTranslation('en', en);
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import useCustomFonts from "../../hooks/useFonts";
-import { format } from 'date-fns';
 
 // TimePicker Component (Integrated directly in this file)
-const TimePicker = ({ value, onChange, label }) => {
+const TimePicker = ({ 
+  value, 
+  onChange, 
+  label 
+} : {
+  value: string,
+  onChange: (newDate: string) => void,
+  label: string
+  }) => {
   const [visible, setVisible] = useState(false);
-  const [hours, setHours] = useState(value ? value.getHours().toString().padStart(2, '0') : '00');
-  const [minutes, setMinutes] = useState(value ? value.getMinutes().toString().padStart(2, '0') : '00');
+  const [hours, setHours] = useState(value ? new Date(value).getHours().toString().padStart(2, '0') : '00');
+  const [minutes, setMinutes] = useState(value ? new Date(value).getMinutes().toString().padStart(2, '0') : '00');
 
   const handleOpen = () => {
-    setHours(value ? value.getHours().toString().padStart(2, '0') : '00');
-    setMinutes(value ? value.getMinutes().toString().padStart(2, '0') : '00');
+    setHours(value ? new Date(value).getHours().toString().padStart(2, '0') : '00');
+    setMinutes(value ? new Date(value).getMinutes().toString().padStart(2, '0') : '00');
     setVisible(true);
   };
 
@@ -26,32 +30,29 @@ const TimePicker = ({ value, onChange, label }) => {
   };
 
   const handleConfirm = () => {
-    // Use default value "00" if field is empty
     const h = hours === '' ? '00' : hours;
     const m = minutes === '' ? '00' : minutes;
     
-    // Create a new date object with the selected time
-    const newDate = new Date(value);
+    // Tạo Date từ `value` hoặc sử dụng `new Date()` nếu `value` không hợp lệ
+    const newDate = value && !isNaN(new Date(value).getTime()) ? new Date(value) : new Date();
+    
     newDate.setHours(parseInt(h, 10));
     newDate.setMinutes(parseInt(m, 10));
-    
-    onChange(newDate);
+  
+    onChange(newDate.toISOString()); // Đổi thành ISO để lưu trữ chuẩn
     handleClose();
   };
+  
 
   // Format the time for display in the input field
-  const formatTime = (date) => {
-    if (!date) return '';
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
-  };
 
   return (
     <View>
       <TextInput
         label={label}
-        value={formatTime(value)}
+        value={value && !isNaN(new Date(value).getTime()) 
+          ? new Date(value).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) 
+          : ''}
         onFocus={handleOpen}
         style={timePickerStyles.input}
       />
@@ -196,17 +197,18 @@ const timePickerStyles = StyleSheet.create({
 });
 
 // Define types for schedule object
-type Schedule = {
+export type Schedule = {
+    id: number | null
     startTime: Date;
-    startDate: Date;
     device: string;
     duration: number;
+    status: boolean;
 };
 
 // Device Dropdown Component
-const DeviceDropdown = ({ value, onChange }) => {
+const DeviceDropdown = ({ value, onChange } : {value: string, onChange: (device: string) => void}) => {
   const [visible, setVisible] = useState(false);
-  const devices = ['Thiết bị 1', 'Thiết bị 2', 'Thiết bị 3'];
+  const devices = ['Máy bơm', 'Quạt', 'Đèn'];
 
   return (
     <Menu
@@ -241,13 +243,11 @@ const DeviceDropdown = ({ value, onChange }) => {
 function WateringSchedule() {
     const [startDate, setStartDate] = useState(new Date());
     const [startTime, setStartTime] = useState(new Date());
-    const [device, setDevice] = useState('Thiết bị 1');
+    const [device, setDevice] = useState<string>('Máy bơm');
     const [duration, setDuration] = useState(30);
     const [schedules, setSchedules] = useState<Schedule[]>([]);
-    const [selectedDates, setSelectedDates] = useState<Date[]>([]);
-    const insets = useSafeAreaInsets();
 
-    const handleAddSchedule = () => {
+    const handleAddSchedule = async () => {
       // Create complete datetime objects by combining date and time
       const completeStartDateTime = new Date(startDate);
       completeStartDateTime.setHours(
@@ -262,38 +262,75 @@ function WateringSchedule() {
       }
       
       // Store complete datetime objects in the schedule
-      const newSchedule: Schedule = { 
-          startTime: completeStartDateTime, 
-          startDate,
-          device,
-          duration: Number(duration)
+      const newSchedule: Schedule = {
+          id: null,
+          startTime: completeStartDateTime,
+          device: device,
+          duration: Number(duration),
+          status: false
       };
       
-      setSchedules([...schedules, newSchedule]);
+      try {
+
+        const response = await fetch("http://192.168.224.239:8080/scheduling-item/create", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(newSchedule)
+        });
+
+
+        fetchSchedulingItems()
+      } catch (error) {
+        alert("Không thể thêm lịch tưới ngay lúc này!")
+      }
     };
 
-    const formatDate = (date: Date) => {
-        const day = date.getDate().toString().padStart(2, '0');
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
-    };
+    const deleteSchedulingItem = async (id: number | null) => {
+      if(id === null) return
+      try {
+        // await fetch(`http://localhost:8080/scheduling-item/delete/${id}`)
+        await fetch(`http://192.168.224.239:8080/scheduling-item/delete/${id}`)
 
-    const formatWateringTime = (startTime, duration) => {
-      const endTime = new Date(startTime);
-      
-      endTime.setSeconds(endTime.getSeconds() + duration);
-      
-      const formatTime = (date) => {
-          const hours = date.getHours().toString().padStart(2, '0');
-          const minutes = date.getMinutes().toString().padStart(2, '0');
-          const seconds = date.getSeconds().toString().padStart(2, '0');
-          return `${hours}:${minutes}:${seconds}`;
-      };
-      
-      return `${formatTime(startTime)} - ${formatTime(endTime)}`;
-  };
+        fetchSchedulingItems()
+      } catch (error) {
+        alert("Không thể xóa lịch tưới")
+      }
+    }
 
+  const fetchSchedulingItems = async () => {
+    try {
+      // const response = await fetch('http://localhost:8080/scheduling-item/all')
+      const response = await fetch('http://192.168.224.239:8080/scheduling-item/all')
+      const jsonData = await response.json()
+
+      setSchedules(jsonData)
+    } catch (error) {
+      setSchedules([])
+    }
+  }
+
+  const checkAndDoSchedulingItem = async () => {
+    try{
+      // await fetch("http://localhost:8080/scheduling-item/check")
+      await fetch("http://192.168.224.239:8080/scheduling-item/check")
+    }catch(e){
+      
+    }
+  }
+
+  useEffect(() => {
+    fetchSchedulingItems()
+    checkAndDoSchedulingItem()
+
+    const checkInterval = setInterval(() => {
+      checkAndDoSchedulingItem()
+      fetchSchedulingItems()
+    }, 5000)
+
+    return () => clearInterval(checkInterval)
+  }, [])
     return (
         <PaperProvider>
             <ScrollView style={[styles.container]}>
@@ -302,7 +339,6 @@ function WateringSchedule() {
                     <Text style={styles.logo}>
                         Sm<Text style={styles.logoBold}>irr</Text>
                     </Text>
-                    <Ionicons name="notifications-outline" size={24} color="black" />
                 </View>
                 <Text variant="headlineMedium" style={styles.title}>LÊN LỊCH TƯỚI</Text>
 
@@ -316,7 +352,7 @@ function WateringSchedule() {
                             onChange={(d) => setStartDate(d || new Date())}
                             locale="vn"
                             style={styles.datePicker}
-                            inputMode="date"
+                            inputMode="start"
                         />
                     </View>
                     
@@ -324,11 +360,10 @@ function WateringSchedule() {
                     <View style={styles.dateInputRight}>
                         <TimePicker
                             label="Giờ tưới"
-                            value={startTime}
-                            onChange={(newTime) => {
-                                // Create a new date that combines the selected date with the new time
+                            value={startTime.toISOString()}
+                            onChange={(newTime: string) => {
                                 const combinedDate = new Date(startDate);
-                                combinedDate.setHours(newTime.getHours(), newTime.getMinutes());
+                                combinedDate.setHours(new Date(newTime).getHours(), new Date(newTime).getMinutes());
                                 setStartTime(combinedDate);
                             }}
                             style={styles.datePicker}
@@ -383,16 +418,22 @@ function WateringSchedule() {
                                 style={styles.scheduleCard}
                             >
                                 <Card.Content>
-                                    <Text style={styles.scheduleCardTitle}>Lịch tưới #{index + 1}</Text>
+                                    <Text style={styles.scheduleCardTitle}>Lịch tưới {index + 1}</Text>
                                     <Text style={styles.scheduleCardDetail}>
-                                        Thời gian tưới: {formatWateringTime(schedule.startTime, schedule.duration)}
+                                        Tưới trong: {schedule.duration} giây
                                     </Text>
                                     <Text style={styles.scheduleCardDetail}>
-                                        Ngày: {formatDate(schedule.startDate)}
+                                        Thời gian bắt đầu: {new Date(schedule.startTime).toLocaleString('vi-VN')}
                                     </Text>
                                     <Text style={styles.scheduleCardDetail}>
                                         Thiết bị: {schedule.device}
                                     </Text>
+                                    <Text style={styles.scheduleCardDetail}>
+                                        Trạng thái: {schedule.status ? "Đã hoàn thành" : "Chưa thực hiện"}
+                                    </Text>
+                                    <Button style={styles.deleteButton} onPress={() => deleteSchedulingItem(schedule.id)}>
+                                      <Text style={{color: "white"}}>Xóa</Text>
+                                    </Button>
                                 </Card.Content>
                             </Card>
                         ))}
@@ -409,9 +450,14 @@ const styles = StyleSheet.create({
     container: {
         flex: 1, paddingTop: 20, paddingBottom: 20, paddingLeft: 15, paddingRight: 15, backgroundColor: "white"
     },
-    header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    header: { flexDirection: "row", justifyContent: "center", alignItems: "center" },
     logo: { fontSize: 30, fontWeight: "bold", color: "#98C13F"},
     logoBold: { color: "#159148", fontWeight: "bold" },
+    deleteButton: {
+      marginTop: 5,
+      backgroundColor: "#FF0000",
+      width: 20,
+    },
     title: {
         margin: 15,
         textAlign: 'center',

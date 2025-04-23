@@ -52,49 +52,42 @@ const ChartScreen = () => {
 
   const fetchData = async (time: string) => {
     try {
-      // const lightResponse = await fetch(`http://localhost:8080/sensor/anhsang/chart/${time}`)
-      const lightResponse = await fetch(`http://192.168.1.32:8080/sensor/anhsang/chart/${time}`)
-      const lightData = await lightResponse.json()
-      setDataLight(lightData.data);
-      
-      // const temperatureResponse = await fetch(`http://localhost:8080/sensor/nhietdo/chart/${time}`)
-      const temperatureResponse = await fetch(`http://192.168.1.32:8080/sensor/nhietdo/chart/${time}`)
-      const temperatureData = await temperatureResponse.json()
-      setDataTemperature(temperatureData.data);
-      
-      // const humidityResponse = await fetch(`http://localhost:8080/sensor/doam/chart/${time}`)
-      const humidityResponse = await fetch(`http://192.168.1.32:8080/sensor/doam/chart/${time}`)
-      const humidityData = await humidityResponse.json()
-      setDataHumidity(humidityData.data);
-      
-      // const moistureResponse = await fetch(`http://localhost:8080/sensor/do-am-dat/chart/${time}`)
-      const moistureResponse = await fetch(`http://192.168.1.32:8080/sensor/do-am-dat/chart/${time}`)
-      const moistrureData = await moistureResponse.json()
-      setDataMoisture(moistrureData.data);
+      // const lightResponse = await fetch(`http://localhost:8080/sensor/chart/${time}`)
+      const respone = await fetch(`http://192.168.224.239:8080/sensor/chart/${time}`)
+      const jsonData = await respone.json()
+      setDataLight(jsonData.light);
+      setDataTemperature(jsonData.temperature);
+      setDataHumidity(jsonData.humidity);
+      setDataMoisture(jsonData.moisture);
       
     } catch (error) {
-      
+      setDataHumidity([])
+      setDataLight([])
+      setDataTemperature([])
+      setDataMoisture([])
     }
   }
 
   const handleDataShow = (sensor: string): number[] => {
     let values;
-    if (sensor === "light") values = dataLight.map(item => parseFloat(item.value));
-    else if (sensor === "temperature") values = dataTemperature.map(item => parseFloat(item.value));
-    else if (sensor === "moisture") values = dataMoisture.map(item => parseFloat(item.value));
-    else values = dataHumidity.map(item => parseFloat(item.value));
+    if (sensor === "light") values = dataLight?.map(item => parseFloat(item.value)) || [];
+    else if (sensor === "temperature") values = dataTemperature?.map(item => parseFloat(item.value)) || [];
+    else if (sensor === "moisture") values = dataMoisture?.map(item => parseFloat(item.value)) || [];
+    else values = dataHumidity?.map(item => parseFloat(item.value)) || [];
   
     return values.filter(value => !isNaN(value) && value !== null && value !== undefined);
   };
-
+  
   const handleDateShow = (sensor: string): string[] => {
     let dates;
-    if (sensor === "light") dates = dataLight.map(item => new Date(item.created_at).toLocaleTimeString());
-    else if (sensor === "temperature") dates = dataTemperature.map(item => new Date(item.created_at).toLocaleTimeString());
-    else if (sensor === "moisture") dates = dataMoisture.map(item => new Date(item.created_at).toLocaleTimeString());
-    else dates = dataHumidity.map(item => new Date(item.created_at).toLocaleTimeString());
+    if (sensor === "light") dates = dataLight?.map(item => new Date(item.created_at).toLocaleTimeString()) || [];
+    else if (sensor === "temperature") dates = dataTemperature?.map(item => new Date(item.created_at).toLocaleTimeString()) || [];
+    else if (sensor === "moisture") dates = dataMoisture?.map(item => new Date(item.created_at).toLocaleTimeString()) || [];
+    else dates = dataHumidity?.map(item => new Date(item.created_at).toLocaleTimeString()) || [];
+  
     return dates.filter(date => date && date !== "Invalid Date");
   };
+  
   
 
   useEffect(() => {
@@ -107,7 +100,6 @@ const ChartScreen = () => {
         <Text style={styles.logo}>
           Sm<Text style={styles.logoBold}>irr</Text>
         </Text>
-        <Ionicons name="notifications-outline" size={24} color="black" />
       </View>
 
       <View style={styles.pickerTime}>
@@ -136,7 +128,7 @@ const ChartScreen = () => {
               },
             ],
           }}
-          width={Math.max(Dimensions.get("window").width - 40, dataTemperature.length * 50)}
+          width={Math.max(Dimensions.get("window").width - 40, (dataTemperature?.length | 0) * 15)}
           height={1000}
           chartConfig={chartConfig}
           bezier
@@ -160,7 +152,7 @@ const ChartScreen = () => {
               },
             ],
           }}
-          width={Math.max(Dimensions.get("window").width - 40, dataLight.length * 50)}
+          width={Math.max(Dimensions.get("window").width - 40, (dataLight?.length | 0) * 15)}
           height={1000}
           chartConfig={chartConfig}
           bezier
@@ -184,7 +176,7 @@ const ChartScreen = () => {
               },
             ],
           }}
-          width={Math.max(Dimensions.get("window").width - 40, dataHumidity.length * 50)}
+          width={Math.max(Dimensions.get("window").width - 40, (dataHumidity?.length | 0) * 15)}
           height={1000}
           chartConfig={chartConfig}
           bezier
@@ -208,7 +200,7 @@ const ChartScreen = () => {
               },
             ],
           }}
-          width={Math.max(Dimensions.get("window").width - 40, dataMoisture.length * 50)}
+          width={Math.max(Dimensions.get("window").width - 40, (dataMoisture?.length | 0) * 15)}
           height={1000}
           chartConfig={chartConfig}
           bezier
@@ -223,7 +215,7 @@ const ChartScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingTop: 20, paddingBottom: 20, paddingLeft: 15, paddingRight: 15, backgroundColor: "white" },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  header: { flexDirection: "row", justifyContent: "center", alignItems: "center" },
   logo: { fontSize: 30, fontWeight: "bold", color: "#98C13F"},
   logoBold: { color: "#159148", fontWeight: "bold" },
   title: {

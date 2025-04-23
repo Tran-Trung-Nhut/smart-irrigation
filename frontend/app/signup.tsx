@@ -6,19 +6,18 @@ import {
   StyleSheet,
   TouchableOpacity,
   ImageBackground,
-  Image,
   Switch,
-  ScrollView,
 } from "react-native";
 import useCustomFonts from "../hooks/useFonts";
 import { useRouter } from "expo-router";
-import Icon from 'react-native-vector-icons/FontAwesome'; // import thư viện icon
+import Icon from 'react-native-vector-icons/FontAwesome'; // import thư viện 
+import { setUser } from "./auth";
 
 export default function SignupScreen() {
   const router = useRouter();
+  const [error, setError] = useState<string>("")
   const [username, setUsername] = useState("");
-  const [fullname, setFullname] = useState("");
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSecure, setIsSecure] = useState(true);
@@ -32,8 +31,46 @@ export default function SignupScreen() {
   const [isChecked, setIsChecked] = useState(false);
 
   const fontsLoaded = useCustomFonts();
-if (!fontsLoaded) return null; // Chờ tải font trước khi render UI
+  if (!fontsLoaded) return null; // Chờ tải font trước khi render UI
   
+  const handleSignUp = async () => {
+    if(username === "" || password === "" || name === "" || confirmPassword === ""){
+      setError("Không được để trống bất kỳ trường nào")
+      return
+    }
+
+    if(password !== confirmPassword){
+      setError("Trường mật khẩu và xác nhận mật khẩu không giống nhau");
+      return
+    }
+
+    const user = {
+      username,
+      password,
+      name
+    }
+
+    try {
+      const response = await fetch("http://192.168.224.239:8080/user/signup",{
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(user)
+      })
+      const jsonData = await response.json()
+
+      if(jsonData.message == "successful"){
+        setUser(jsonData.data);
+        router.replace("/(tabs)/home")
+      }else{
+        setError(jsonData.message);
+        return;
+      }
+    } catch (error) {
+      setError("")
+    }
+  }
 
   return (
     <ImageBackground source={require("../assets/images/bg-signup.jpg")} style={styles.background}>
@@ -56,19 +93,10 @@ if (!fontsLoaded) return null; // Chờ tải font trước khi render UI
           style={styles.input}
           placeholder="Họ và tên"
           placeholderTextColor="#aaa"
-          value={fullname}
-          onChangeText={setFullname}
+          value={name}
+          onChangeText={setName}
         />
         
-        {/* Input Fields */}
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#aaa"
-          value={email}
-          onChangeText={setEmail}
-        />
-
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
@@ -97,6 +125,13 @@ if (!fontsLoaded) return null; // Chờ tải font trước khi render UI
           </TouchableOpacity>
         </View>
 
+        {error && (
+          <View>
+            <Text style={{color: "red", fontSize: 12, fontStyle: "italic"}}>{error}</Text>
+          </View>
+        )}
+        
+
         {/* Terms & Conditions */}
         <View style={styles.checkboxContainer}>
           <Switch value={isChecked} onValueChange={setIsChecked}/>
@@ -108,7 +143,7 @@ if (!fontsLoaded) return null; // Chờ tải font trước khi render UI
         </View>
 
         {/* Sign Up Button */}
-        <TouchableOpacity style={styles.signupButton}>
+        <TouchableOpacity style={styles.signupButton} onPress={() => handleSignUp()}>
           <Text style={styles.signupButtonText}>ĐĂNG KÝ</Text>
         </TouchableOpacity>
 

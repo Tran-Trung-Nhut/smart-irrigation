@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -16,12 +16,14 @@ import useCustomFonts from "../../hooks/useFonts";
 import { useRouter } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { currentUser } from "../auth";
+import { logout, setUser } from "../auth";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [username, setUsername] = useState("nhutquaga");
-  const [fullname, setFullname] = useState("Trần Trung Nhựt");
-  const [email, setEmail] = useState("nhut.tran@hcmut.edu.vn");
+  const [username, setUsername] = useState("");
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState<string>("")
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -30,6 +32,7 @@ export default function LoginScreen() {
   const [isSecureCurrentPassword, setIsSecureCurrentPassword] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+  const [error, setError] = useState<string>("")
 
   const togglePasswordVisibility = () => {
     setIsSecurePassword(!isSecurePassword);
@@ -55,12 +58,17 @@ export default function LoginScreen() {
   const handlePasswordSubmit = () => {
     // TODO: Add actual password validation here
     if (currentPassword.length > 0) {
-      // For demo purposes, any non-empty password will pass
-      setPasswordModalVisible(false);
-      setEditMode(true);
-      setCurrentPassword("");
+      
+      if(currentPassword === password){
+        setPasswordModalVisible(false);
+        setEditMode(true);
+        setCurrentPassword("")
+        setError("")
+      }else{
+        setError("Mật khẩu không chính xác")
+      }
     } else {
-      alert("Vui lòng nhập mật khẩu!");
+      setError("Vui lòng nhập mật khẩu!");
     }
   };
 
@@ -77,26 +85,70 @@ export default function LoginScreen() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (editMode) {
-      // Handle "Đồng ý" in edit mode
+      if(!newPassword || !confirmPassword) {
+        setError("Không được để trống mật khẩu mới và xác nhận mật khẩu")
+        return
+      }
+  
       if (newPassword && newPassword !== confirmPassword) {
-        alert("Mật khẩu mới và xác nhận mật khẩu không khớp!");
+        setError("Mật khẩu mới và xác nhận mật khẩu không khớp!");
         return;
       }
-      // Process saving information
-      setEditMode(false);
-      // Reset password fields
-      setNewPassword("");
-      setConfirmPassword("");
+      
+      const user = {
+        username,
+        password: newPassword,
+        name
+      }
+
+      try {
+        const response = await fetch("http://192.168.224.239:8080/user/change-password",
+          {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(user)
+          })
+
+          const jsonData = await response.json()
+
+          if(jsonData.message !== "successful"){
+            setError(jsonData.message)
+          }else{
+            setUser(jsonData.data)
+            setEditMode(false);
+            setNewPassword("");
+            setConfirmPassword("");
+            setCurrentPassword("")
+            setError("")
+          }
+      } catch (error) {
+        
+      }
     } else {
       // Handle "Đăng xuất"
-      router.replace("/(tabs)/home");
+      logout()
+      router.replace("/login");
     }
   };
 
   const fontsLoaded = useCustomFonts();
   if (!fontsLoaded) return null;
+
+  const fetchUser = () => {
+    if (currentUser === null) return
+
+    setUsername(currentUser.username)
+    setName(currentUser.name)
+    setPassword(currentUser.password)
+  }
+
+  useEffect(() => {
+    fetchUser()
+  }, [])
 
   return (
     <SafeAreaView style={styles.containerAll}>
@@ -106,7 +158,6 @@ export default function LoginScreen() {
         <Text style={styles.logo}>
           Sm<Text style={styles.logoBold}>irr</Text>
         </Text>
-        <Ionicons name="notifications-outline" size={24} color="black" />
       </View>
 
       <KeyboardAvoidingView 
@@ -145,26 +196,11 @@ export default function LoginScreen() {
                   style={styles.input}
                   placeholder="Họ và tên"
                   placeholderTextColor="#aaa"
-                  value={fullname}
-                  onChangeText={setFullname}
+                  value={name}
+                  onChangeText={setName}
                 />
               ) : (
-                <Text style={styles.infoText}>{fullname}</Text>
-              )}
-            </View>
-            
-            <View style={styles.infoContainer}>
-              <Text style={styles.label}>Email:</Text>
-              {editMode ? (
-                <TextInput
-                  style={styles.input}
-                  placeholder="Email"
-                  placeholderTextColor="#aaa"
-                  value={email}
-                  onChangeText={setEmail}
-                />
-              ) : (
-                <Text style={styles.infoText}>{email}</Text>
+                <Text style={styles.infoText}>{name}</Text>
               )}
             </View>
 
@@ -207,6 +243,12 @@ export default function LoginScreen() {
                   </View>
                 </View>
               </>
+            )}
+
+            {error && (
+              <View>
+                <Text style={{color: "red", fontSize: 12, fontStyle: "italic"}}>{error}</Text>
+              </View>
             )}
 
             <View style={styles.buttonContainer}>
@@ -254,7 +296,12 @@ export default function LoginScreen() {
                 <Icon name={isSecureCurrentPassword ? 'eye-slash' : 'eye'} size={20} color="#aaa" />
               </TouchableOpacity>
             </View>
-            
+            {error && (
+              <View>
+                <Text style={{color: "red", fontSize: 12, fontStyle: "italic"}}>{error}</Text>
+              </View>
+            )}
+
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity style={styles.modalCancelButton} onPress={closePasswordModal}>
                 <Text style={styles.modalCancelButtonText}>HỦY</Text>
@@ -277,7 +324,7 @@ const styles = StyleSheet.create({
   },
   header: { 
     flexDirection: "row", 
-    justifyContent: "space-between", 
+    justifyContent: "center", 
     alignItems: "center", 
     backgroundColor: 'white',
     paddingTop: 20, 

@@ -19,6 +19,19 @@ public class ButtonController {
     }
 
     @CrossOrigin(origins = "*")
+    @GetMapping("/last-value")
+    public Map<String, Integer> getLastValueAllButton (){
+        Map<String, Integer> result = new HashMap<>();
+        Integer button1 = buttonService.getLastValueButton("button1");
+        result.put("button1", button1);
+        Integer button2 = buttonService.getLastValueButton("button2");
+        result.put("button2", button2);
+        Integer button3 = buttonService.getLastValueButton("button3");
+        result.put("button3", button3);
+        return result;
+    } 
+
+    @CrossOrigin(origins = "*")
     @GetMapping("/{button}/last-value")
     public Map<String, Integer> getLastValueButton (@PathVariable String button){
         Integer lastValue = buttonService.getLastValueButton(button);
@@ -29,7 +42,7 @@ public class ButtonController {
 
     @CrossOrigin(origins = "*")
     @GetMapping("/{button}/{status}")
-    public Map<String, Object> sendDataButton1 (@PathVariable String button, @PathVariable String status){
-        return buttonService.senDataButton1(status, button);
+    public Map<String, Object> sendDataButton(@PathVariable String button, @PathVariable String status){
+        return buttonService.sendDataButton(status, button);
     }
 }

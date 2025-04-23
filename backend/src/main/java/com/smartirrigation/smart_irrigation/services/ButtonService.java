@@ -28,7 +28,16 @@ public class ButtonService {
     public Integer getLastValueButton(String button){
         String url = ROOT_URL + button;
 
-        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-AIO-Key", dotenv.get("X_AIO_Key"));
+
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(
+            url, HttpMethod.GET, entity, String.class
+        );
 
         try {
             JsonNode rootNode = objectMapper.readTree(response.getBody());
@@ -39,7 +48,7 @@ public class ButtonService {
         }
     }
 
-    public Map<String, Object> senDataButton1 (String status, String button){
+    public Map<String, Object> sendDataButton(String status, String button){
         String url = ROOT_URL + button + "/data";
 
         HttpHeaders headers = new HttpHeaders();

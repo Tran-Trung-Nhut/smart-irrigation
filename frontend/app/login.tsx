@@ -6,26 +6,66 @@ import {
   StyleSheet,
   TouchableOpacity,
   ImageBackground,
-  Image,
 } from "react-native";
 import useCustomFonts from "../hooks/useFonts";
 import { useRouter } from "expo-router";
 import Icon from 'react-native-vector-icons/FontAwesome'; // import thư viện icon
+import { setUser } from "./auth";
+
+export type User = {
+  id: number,
+  username: string,
+  password: string,
+  name: string
+}
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState<string>("")
   const [password, setPassword] = useState("");
   const [isSecure, setIsSecure] = useState(true);
-  const [isSecure1, setIsSecure1] = useState(true);
+  const [error, setError] = useState<string>("")
   const togglePasswordVisibility = () => {
-    setIsSecure(!isSecure); // Chuyển đổi trạng thái ẩn/hiện mật khẩu
+    setIsSecure(!isSecure); 
   };
-  const toggleConfirmPasswordVisibility = () => {
-    setIsSecure1(!isSecure1); // Chuyển đổi trạng thái ẩn/hiện mật khẩu
-  };
+
   const fontsLoaded = useCustomFonts();
-  if (!fontsLoaded) return null; // Chờ tải font trước khi render UI
+  if (!fontsLoaded) return null; 
+
+  const handleLogin = async () =>{
+    if(username === "" || password === ""){
+      setError("Không được để trống tên đăng nhập và mật khẩu")
+      return
+    }
+
+    const user = {
+      username,
+      password,
+      name: ""
+    }
+    try {
+      const response = await fetch("http://192.168.224.239:8080/user/signin",
+        {
+          method: "POST",
+          headers: {
+              "Content-Type": "application/json"
+          },
+          body: JSON.stringify(user)
+        }
+      )
+      const jsonData = await response.json()
+
+      if(jsonData.message == "successful"){
+        setUser(jsonData.data)
+        router.replace("/(tabs)/home")
+      }else{
+        setError(jsonData.message);
+        return;
+      }
+    } catch (error) {
+      setError("")
+    }
+  }
 
 
   return (
@@ -46,8 +86,8 @@ export default function LoginScreen() {
           style={styles.input}
           placeholder="Tên đăng nhập"
           placeholderTextColor="#aaa"
-          value={email}
-          onChangeText={setEmail}
+          value={username}
+          onChangeText={setUsername}
         />
 
         <View style={styles.inputContainer}>
@@ -64,6 +104,12 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
+        {error && (
+          <View>
+            <Text style={{color: "red", fontSize: 12, fontStyle: "italic"}}>{error}</Text>
+          </View>
+        )}
+
         {/* Forgot Password */}
         <TouchableOpacity>
           <Text style={styles.forgotPassword}>Quên mật khẩu?</Text>
@@ -71,7 +117,7 @@ export default function LoginScreen() {
 
         <TouchableOpacity
           style={styles.loginButton}
-          onPress={() => router.replace("/(tabs)/home")}
+          onPress={() => handleLogin()}
         >
           <Text style={styles.loginButtonText}>ĐĂNG NHẬP</Text>
         </TouchableOpacity>
