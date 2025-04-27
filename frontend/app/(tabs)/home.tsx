@@ -173,7 +173,9 @@ const handleAddScheduleAuto = async (device: string, startDateTime: Date, durati
         if(button2) await toggleButtonForVoice("water")
       } else if(utils.checkIncludeText(command, utils.viewChartCommands)){
         router.replace("/(tabs)/chart")
-      } 
+      } else if(utils.checkIncludeText(command, utils.viewNotifications)){
+        router.replace("./(tabs)/noti")
+      }
     } catch (error) {
       
     }
@@ -399,7 +401,7 @@ const handleAddScheduleAuto = async (device: string, startDateTime: Date, durati
         <View style={styles.aiItem}>
           <Ionicons name="sunny-outline" size={24} color="black" />
           <Text style={styles.aiText}>ÁNH SÁNG</Text>
-          <Text style={styles.aiValue}>{lightIntensity}</Text>
+          <Text style={styles.aiValue}>{lightIntensity}%</Text>
         </View>
 
         <View style={styles.aiItem}>
@@ -411,7 +413,7 @@ const handleAddScheduleAuto = async (device: string, startDateTime: Date, durati
         <View style={styles.aiItem}>
           <Ionicons name="water-outline" size={24} color="black" />
           <Text style={styles.aiText}>ĐỘ ẨM</Text>
-          <Text style={styles.aiValue}>{humidity}ml</Text>
+          <Text style={styles.aiValue}>{humidity}%</Text>
         </View>
 
         <View style={styles.aiItem}>

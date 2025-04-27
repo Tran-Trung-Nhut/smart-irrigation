@@ -340,7 +340,7 @@ function WateringSchedule() {
                         Sm<Text style={styles.logoBold}>irr</Text>
                     </Text>
                 </View>
-                <Text variant="headlineMedium" style={styles.title}>LÊN LỊCH TƯỚI</Text>
+                <Text variant="headlineMedium" style={styles.title}>ĐẶT LỊCH</Text>
 
                 {/* Start Date and Time */}
                 <View style={styles.inputContainer}>

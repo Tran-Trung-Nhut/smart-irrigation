@@ -136,6 +136,17 @@ export const viewChartCommands: string[] = [
     "dữ liệu trực quan"
 ];
 
+export const viewNotifications: string [] = [
+    "xem thông báo",
+    "thông báo",
+    "hiển thị thông báo",
+    "mở thông báo",
+    "xem danh sách thông báo",
+    "danh sách thông báo",
+    "hiển thị danh sách thông báo",
+    "mở danh sách thông báo"
+]
+
 export const scheduleCommands: string[] = [
     "đặt lịch",
     "lập lịch",
