@@ -9,7 +9,9 @@ import com.smartirrigation.smart_irrigation.services.NotificationService;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -28,6 +30,8 @@ public class SchedulingItemService {
 
     @Autowired
     private NotificationService notificationService;
+
+    private static Set<Integer> processingSchedulingItems = new HashSet<>();
 
     public List<SchedulingItem> getAllSchedulingItems(){
         return schedulingItemRepository.findAll();
@@ -49,6 +53,12 @@ public class SchedulingItemService {
     
         for (SchedulingItem schedulingItem : schedulingItems) {
             try {
+                if (processingSchedulingItems.contains(schedulingItem.getId())) {
+                    continue; // Bỏ qua nếu đang xử lý
+                }
+
+                processingSchedulingItems.add(schedulingItem.getId());
+
                 // Chuyển từ String sang ZonedDateTime để xử lý đúng múi giờ
                 ZonedDateTime startDateTime = ZonedDateTime.parse(schedulingItem.getStartTime(), formatter)
                     .withZoneSameInstant(ZoneId.of("Asia/Ho_Chi_Minh"));
@@ -100,7 +110,7 @@ public class SchedulingItemService {
                 notification.setStatus(false);
 
                 notificationService.createOneNotification(notification);
-
+                processingSchedulingItems.remove(schedulingItem.getId());
             }
         }, schedulingItem.getDuration() * 1000);
     }

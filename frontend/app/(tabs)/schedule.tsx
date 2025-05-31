@@ -271,15 +271,13 @@ function WateringSchedule() {
       };
       
       try {
-
-        const response = await fetch("http://192.168.224.239:8080/scheduling-item/create", {
+        await fetch("http://localhost:8080/scheduling-item/create", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify(newSchedule)
         });
-
 
         fetchSchedulingItems()
       } catch (error) {
@@ -290,8 +288,7 @@ function WateringSchedule() {
     const deleteSchedulingItem = async (id: number | null) => {
       if(id === null) return
       try {
-        // await fetch(`http://localhost:8080/scheduling-item/delete/${id}`)
-        await fetch(`http://192.168.224.239:8080/scheduling-item/delete/${id}`)
+        await fetch(`http://localhost:8080/scheduling-item/delete/${id}`)
 
         fetchSchedulingItems()
       } catch (error) {
@@ -301,8 +298,7 @@ function WateringSchedule() {
 
   const fetchSchedulingItems = async () => {
     try {
-      // const response = await fetch('http://localhost:8080/scheduling-item/all')
-      const response = await fetch('http://192.168.224.239:8080/scheduling-item/all')
+      const response = await fetch('http://localhost:8080/scheduling-item/all')
       const jsonData = await response.json()
 
       setSchedules(jsonData)
@@ -313,8 +309,7 @@ function WateringSchedule() {
 
   const checkAndDoSchedulingItem = async () => {
     try{
-      // await fetch("http://localhost:8080/scheduling-item/check")
-      await fetch("http://192.168.224.239:8080/scheduling-item/check")
+      await fetch("http://localhost:8080/scheduling-item/check")
     }catch(e){
       
     }
@@ -531,7 +526,8 @@ const styles = StyleSheet.create({
       marginRight: 12,
       marginBottom: 8,
       elevation: 2,
-      backgroundColor: 'white'
+      backgroundColor: 'white',
+      
     },
     scheduleCardTitle: {
       fontWeight: 'bold',

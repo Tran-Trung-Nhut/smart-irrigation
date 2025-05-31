@@ -44,7 +44,7 @@ export default function LoginScreen() {
       name: ""
     }
     try {
-      const response = await fetch("http://192.168.224.239:8080/user/signin",
+      const response = await fetch("http://localhost:8080/user/signin",
         {
           method: "POST",
           headers: {

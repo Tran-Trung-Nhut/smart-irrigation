@@ -25,49 +25,102 @@ export default function HomeScreen() {
   const webviewRef = useRef<WebViewType | null>(null);
 
   const processScheduleCommand = (command: string) => {
-    alert(command)
+    alert(command);
     const deviceNames = ["Máy bơm", "Đèn", "Quạt"];
-    const foundDevice = deviceNames.find(device => command.includes(device.toLowerCase()));
+    const foundDevice = deviceNames.find(device => command.toLowerCase().includes(device.toLowerCase()));
     if (!foundDevice) {
         setVoiceText("Không xác định được thiết bị từ câu lệnh!");
         return;
     }
 
-    // Tìm giờ và phút (12:30)
-    let timeMatch = command.match(/(\d{1,2}):(\d{1,2})/i); // Tìm giờ và phút
-    if (!timeMatch) {
-        timeMatch = command.match(/(\d{1,2})\s*(giờ)(\s*(\d{1,2})\s*(phút)?)?/i);
-        if(!timeMatch){
-          setVoiceText("Không xác định được thời gian từ câu lệnh!");
-          return;
+    // Tìm giờ và phút
+    let hour;
+    let minute;
+    let second = 0
+    let timeMatch = command.match(/(\d+)\s*(phút|giây)\s*(nữa|sau)/i);
+    if(timeMatch){
+      let value = parseInt(timeMatch[1]); // Lấy số (ví dụ: 15)
+      let unit = timeMatch[2].toLowerCase(); // Lấy đơn vị (phút hoặc giây)
+
+      // Lấy thời gian hiện tại
+      let now = new Date();
+      hour = now.getHours();
+      minute = now.getMinutes();
+      second = now.getSeconds();
+
+      if (unit === "phút") {
+          minute += value; // Cộng thêm số phút
+          // Điều chỉnh nếu phút vượt quá 60
+          if (minute >= 60) {
+              hour += Math.floor(minute / 60);
+              minute %= 60;
+          }
+      } else if (unit === "giây") {
+          second += value; // Cộng thêm số giây
+          // Điều chỉnh nếu giây vượt quá 60
+          if (second >= 60) {
+              minute += Math.floor(second / 60);
+              second %= 60;
+              // Điều chỉnh nếu phút vượt quá 60
+              if (minute >= 60) {
+                  hour += Math.floor(minute / 60);
+                  minute %= 60;
+              }
+          }
         }
+        // Điều chỉnh nếu giờ vượt quá 24 (tùy yêu cầu)
+        if (hour >= 24) {
+            hour %= 24; // Giữ trong phạm vi 24 giờ
+            // Nếu cần xử lý ngày mới, bạn có thể thêm logic ở đây
+        }
+    }else{
+      timeMatch = command.match(/(\d{1,2}):(\d{1,2})/i); // Định dạng "HH:MM"
+      if (timeMatch) {
+        hour = parseInt(timeMatch[1]); // Lấy giờ
+        minute = parseInt(timeMatch[2]); // Lấy phút
+      } else {
+          timeMatch = command.match(/(\d{1,2})\s*(giờ)(\s*(\d{1,2})\s*(phút)?)?/i); // Định dạng "X giờ Y phút"
+          if (timeMatch) {
+              hour = parseInt(timeMatch[1]); // Lấy giờ (ví dụ: "0")
+              minute = timeMatch[4] ? parseInt(timeMatch[4]) : 0; // Lấy phút (ví dụ: "6"), hoặc 0 nếu không có
+          } else {
+              setVoiceText("Không xác định được thời gian từ câu lệnh!");
+              return;
+          }
+      }
     }
 
-    const hour = parseInt(timeMatch[1]);
-    const minute = parseInt(timeMatch[2]);
-
-    // Tìm ngày và tháng (25 tháng 11)
+    // Tìm ngày và tháng (ví dụ: "25 tháng 11")
+    const now = new Date();
+    let scheduledTime = new Date(now);
     const dateMatch = command.match(/ngày\s*(\d{1,2})\s*tháng\s*(\d{1,2})/i);
-    let day = new Date().getDate(); // mặc định là hôm nay
-    let month = new Date().getMonth() + 1; // tháng hiện tại
+    let day = new Date().getDate(); // Mặc định là hôm nay
+    let month = new Date().getMonth() + 1; // Tháng hiện tại
     if (dateMatch) {
         day = parseInt(dateMatch[1]);
         month = parseInt(dateMatch[2]);
+        scheduledTime = new Date(now.getFullYear(), month - 1, day, hour, minute, second, 0);
+    }else{
+      if (command.includes("ngày mai")) {
+          scheduledTime.setDate(now.getDate() + 1);
+      } else if (command.includes("ngày mốt")) {
+          scheduledTime.setDate(now.getDate() + 2);
+      } else if (command.includes("tuần sau")) {
+          scheduledTime.setDate(now.getDate() + 7);
+      } else if (command.includes("tháng sau")) {
+          scheduledTime.setDate(now.getDate() + 30);
+      }
+      scheduledTime.setHours(hour)
+      scheduledTime.setMinutes(minute)
+      scheduledTime.setSeconds(second)
     }
-
-    // Tìm thời lượng (giây) (10 giây)
+      
+    // Tìm thời lượng (ví dụ: "15 giây")
     const durationMatch = command.match(/(trong\s*vòng?\s*)?(\d+)\s*(giây|s)/i);
-
-    let duration : number = 30
-
+    let duration = 30; // Mặc định 30 giây
     if (durationMatch) {
-      duration = parseInt(durationMatch[2]); // 15
-    } else {
+        duration = parseInt(durationMatch[2]); // Lấy thời lượng (ví dụ: "15")
     }
-
-    // Tạo ngày giờ
-    const now = new Date();
-    const scheduledTime = new Date(now.getFullYear(), month - 1, day, hour, minute, 0, 0);
 
     // Gọi hàm xử lý thêm lịch
     handleAddScheduleAuto(foundDevice, scheduledTime, duration);
@@ -82,8 +135,9 @@ const handleAddScheduleAuto = async (device: string, startDateTime: Date, durati
       status: false
   };
 
+  console.log(newSchedule)
   try {
-      const response = await fetch("http://192.168.224.239:8080/scheduling-item/create", {
+      const response = await fetch("http://localhost:8080/scheduling-item/create", {
           method: "POST",
           headers: {
               "Content-Type": "application/json"
@@ -91,7 +145,7 @@ const handleAddScheduleAuto = async (device: string, startDateTime: Date, durati
           body: JSON.stringify(newSchedule)
       });
       if (response.ok) {
-          setVoiceText("Đã thêm lịch thành công!");
+        setVoiceText("Đã thêm lịch thành công!");
       } else {
         setVoiceText("Không thể thêm lịch!");
       }
@@ -234,15 +288,15 @@ const handleAddScheduleAuto = async (device: string, startDateTime: Date, durati
   const toggleButtonForVoice = async (command: string) => {
     try {
       if (command === "water") {
-        const response = await fetch(`http://192.168.224.239:8080/button/button2/${button2 ? 0 : 1}`);
+        const response = await fetch(`http://localhost:8080/button/button2/${button2 ? 0 : 1}`);
         const data = await response.json();
         setButton2(data.value === "1");
       } else if (command === "light") {
-        const response = await fetch(`http://192.168.224.239:8080/button/button1/${button1 ? 0 : 1}`);
+        const response = await fetch(`http://localhost:8080/button/button1/${button1 ? 0 : 1}`);
         const data = await response.json();
         setButton1(data.value === "1");
       } else if(command === "fan"){
-        const response = await fetch(`http://192.168.224.239:8080/button/button3/${button3 ? 0 : 1}`);
+        const response = await fetch(`http://localhost:8080/button/button3/${button3 ? 0 : 1}`);
         const data = await response.json();
         setButton3(data.value === "1");
       }
@@ -254,15 +308,15 @@ const handleAddScheduleAuto = async (device: string, startDateTime: Date, durati
   const toggleButton = async () => {
     try {
       if (selectedAction === "water") {
-        const response = await fetch(`http://192.168.224.239:8080/button/button2/${button2 ? 0 : 1}`);
+        const response = await fetch(`http://localhost:8080/button/button2/${button2 ? 0 : 1}`);
         const data = await response.json();
         setButton2(data.value === "1");
       } else if (selectedAction === "light") {
-        const response = await fetch(`http://192.168.224.239:8080/button/button1/${button1 ? 0 : 1}`);
+        const response = await fetch(`http://localhost:8080/button/button1/${button1 ? 0 : 1}`);
         const data = await response.json();
         setButton1(data.value === "1");
       } else {
-        const response = await fetch(`http://192.168.224.239:8080/button/button3/${button3 ? 0 : 1}`);
+        const response = await fetch(`http://localhost:8080/button/button3/${button3 ? 0 : 1}`);
         const data = await response.json();
         setButton3(data.value === "1");
       }
@@ -276,7 +330,7 @@ const handleAddScheduleAuto = async (device: string, startDateTime: Date, durati
 
   const fetchData = async () => {
     try {
-      const response = await fetch("http://192.168.224.239:8080/sensor/last-value");
+      const response = await fetch("http://localhost:8080/sensor/last-value");
       const jsonData = await response.json();
       setLightIntensity(jsonData.light);
       setHumidity(jsonData.humidity);
@@ -292,7 +346,7 @@ const handleAddScheduleAuto = async (device: string, startDateTime: Date, durati
 
   const fetchButton = async () => {
     try {
-      const response = await fetch("http://192.168.224.239:8080/button/last-value");
+      const response = await fetch("http://localhost:8080/button/last-value");
       const jsonData = await response.json();
       setButton1(jsonData.button1);
       setButton2(jsonData.button2);
@@ -306,7 +360,7 @@ const handleAddScheduleAuto = async (device: string, startDateTime: Date, durati
 
   const checkAndDoSchedulingItem = async () => {
     try {
-      await fetch("http://192.168.224.239:8080/scheduling-item/check");
+      await fetch("http://localhost:8080/scheduling-item/check");
     } catch (e) {
       console.error("Lỗi khi kiểm tra scheduling:", e);
     }

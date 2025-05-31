@@ -52,8 +52,7 @@ const ChartScreen = () => {
 
   const fetchData = async (time: string) => {
     try {
-      // const lightResponse = await fetch(`http://localhost:8080/sensor/chart/${time}`)
-      const respone = await fetch(`http://192.168.224.239:8080/sensor/chart/${time}`)
+      const respone = await fetch(`http://localhost:8080/sensor/chart/${time}`)
       const jsonData = await respone.json()
       setDataLight(jsonData.light);
       setDataTemperature(jsonData.temperature);

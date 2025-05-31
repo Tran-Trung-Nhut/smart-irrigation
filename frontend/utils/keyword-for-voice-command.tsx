@@ -157,7 +157,8 @@ export const scheduleCommands: string[] = [
     "cài đặt lịch",
     "lên lịch",
     "hẹn giờ",
-    "lúc"
+    "lúc",
+    "nữa"
 ];
 
 

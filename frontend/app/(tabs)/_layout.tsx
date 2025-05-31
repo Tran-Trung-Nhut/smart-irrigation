@@ -8,7 +8,7 @@ export default function TabsLayout() {
 
   const fetchNumberOfUnreadNotification = async () => {
     try {
-      const respone = await fetch("http://192.168.224.239:8080/notification/number-unread")
+      const respone = await fetch("http://localhost:8080/notification/number-unread")
       const jsonData = await respone.json()
       setNumberOfUnreadNotification(jsonData.count)
     } catch (error) {

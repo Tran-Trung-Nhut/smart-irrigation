@@ -31,7 +31,7 @@ const Noti = () => {
 
   const handleReadNotification = async (notification: Notification) => {
     try {
-      await fetch(`http://192.168.224.239:8080/notification/read/${notification.id}`)
+      await fetch(`http://localhost:8080/notification/read/${notification.id}`)
       setSelectedNotification(notification);
       await fetchNotifications();
     } catch (error) {
@@ -41,7 +41,7 @@ const Noti = () => {
 
   const handleDeleteNotification = async (notification_id: number) => {
     try {
-      await fetch(`http://192.168.224.239:8080/notification/delete/${notification_id}`)
+      await fetch(`http://localhost:8080/notification/delete/${notification_id}`)
       setSelectedNotification(null);
       await fetchNotifications();
     } catch (error) {
@@ -51,7 +51,7 @@ const Noti = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch("http://192.168.224.239:8080/notification/all");
+      const response = await fetch("http://localhost:8080/notification/all");
       setNotifications(await response.json());
     } catch (error) {
       setNotifications([]);
